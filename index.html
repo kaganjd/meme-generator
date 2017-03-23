@@ -3,26 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <title>memez</title>
+    <script type="text/javascript" src="databaseA.js">
+
+    </script>
     <script src="sketch.js" type="text/javascript"></script>
     <link rel="stylesheet" href="style.css"></link>
     <!--libraries-->
     <script src="libraries/tabletop.js" type="text/javascript"></script>
     <script src="libraries/p5.js" type="text/javascript"></script>
     <script src="libraries/p5.dom.js" type="text/javascript"></script>
+
+    <style media="screen">
+        #defaultCanvas0{
+            object-fit: cover;
+width: 50px;
+height: 100px;
+        }
+    </style>
 </head>
 <body>
     <div id="container">
         <h1>meme generator</h1>
         <div id="instructions">
             <ol>
-                <li>Enter your zip code to find your represenatives</li>
-                <span id="check-zip"></span>
+                <li>Choose State</li>
+                <select id="state-dropdown">
+</select>
+                <span id="check-zip">
+                    <button type="button" id="find">Find</button>
+                </span>
+
                 <li>Click a rep to generate the most recent meme about them</li>
                 <span id="list-reps"></span>
             </ol>
         </div>
         <div id="dashboard">
             <div id="canvas"></div>
+            <div id="image-here">
+
+            </div>
             <div id="slider-area">
                 <span id="smaller">A</span>
                 <div id="size-slider"></div>

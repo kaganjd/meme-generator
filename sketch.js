@@ -3,7 +3,9 @@
 // Mad Libs Generator: https://www.youtube.com/watch?v=ziBO-U2_t3k
 
 // variables for tabletop.js values
-var rawData;
+var rawData, selector, selectedState;
+
+
 
 //TODO: this needs to be an array that we can clear
 var repName;
@@ -39,11 +41,7 @@ function mouseDragged() {
 }
 
 function setup() {
-  // tabletop.js init() function returns data as an array of objects, like this:
-  // [{"animal": "horse", 
-  //  "color": "brown"},
-  //  {"animal": "chick", 
-  //  "color": "yellow"}]
+
   Tabletop.init( { key: '1B4WC1tsm_OnrGZGfltHCoH1ceCYkgkkm5ilhmcyj0Pk',
                    callback: gotData,
                    simpleSheet: true } )
@@ -51,12 +49,22 @@ function setup() {
   canvas = createCanvas(w, h);
   background(200);
 
-  //TODO: make sure input only accepts numbers
-  enterZip = createElement('input');
-  enterZip.parent('check-zip');
-  findButton = createButton('Find');
-  findButton.parent('check-zip');
-  findButton.mousePressed(findReps);
+
+  findButton = document.getElementById('find')
+  findButton.onclick = findReps;
+
+
+  selector = document.getElementById("state-dropdown");
+
+
+  for (var i = 0; i < senators.length; i+=2) {
+      var opt = senators[i].state;
+      // console.log(opt);
+      var el = document.createElement("option");
+      el.textContent = opt;
+      el.value = opt;
+      selector.appendChild(el);
+    }
 
   clearButton = createButton('Clear Canvas');
   clearButton.parent('actions');
@@ -119,25 +127,91 @@ function clearCanvas() {
   background(200);
 }
 
-function gotData(data, tabletop) { 
+function gotData(data, tabletop) {
   rawData = data;
-  console.log("rawData: ", rawData)
+  // console.log("rawData: ", rawData)
 }
 
 function findReps() {
-  zip = enterZip.value();
-  rawData.forEach(function(el) {
-    for (var i = 0; i < rawData.length; i++) {
-      if (zip === rawData[i]["Zip"]) {
-        repName = rawData[i]["MOC"]
-      } else {
-        console.log('No rep found for that zip')
-      }
+  var tempOpts = []
+  var imgOpts = []
+  var tempNum = []
+
+  document.getElementById('check-zip').innerHTML = "<button id='find'>Find</button>"
+  document.getElementById('list-reps').innerHTML = ''
+  findButton = document.getElementById('find')
+  findButton.onclick = findReps;
+  selectedState = selector.options[selector.selectedIndex].value;
+  console.log(selectedState)
+  senators.forEach(function(e){
+    if (e.state == selectedState){
+      tempOpts.push(e.name)
+      imgOpts.push(e.image)
+      tempNum.push(e.phone)
     }
-  });
-  if (repName !== undefined) {
-    repButton = createButton(repName)
-    repButton.parent('list-reps')
-    repButton.mousePressed(dataToCanvas);
-  }
+  })
+
+var buttonA = document.createElement('button')
+var buttonB = document.createElement('button')
+buttonA.innerHTML = tempOpts[0]
+buttonB.innerHTML = tempOpts[1]
+
+document.getElementById('list-reps').append(buttonA)
+document.getElementById('list-reps').append(buttonB)
+
+buttonA.onclick = function() {
+  fillImage(imgOpts[0], tempNum[0])
+};
+buttonB.onclick = function() {
+  fillImage(imgOpts[1], tempNum[1])
+};
+
+
+
+
+
+} //draw rep ends
+
+
+function fillImage(image, number){
+  var img = new Image;
+  img.src = image;
+  var tempDiv = document.getElementById('image-here');
+  // tempDiv.src = image
+  var tempCanvas = document.getElementById('defaultCanvas0'),
+  context = tempCanvas.getContext('2d');
+  img.onload = function(){
+    var ratio = img.width/img.height
+    var divide = img.width / 500
+    console.log(divide)
+    var height = img.height / divide
+    context.drawImage(img,0,0,500,height);
+    drawTextBG(context, "Call " + number + ' To Say', '32px arial', 0, 400);
+
+};
+
+} //fill image ends
+
+
+/// expand with color, background etc.
+function drawTextBG(ctx, txt, font, x, y) {
+
+    ctx.save();
+    ctx.font = font;
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = '#000';
+
+    var width = ctx.measureText(txt).width;
+    ctx.fillRect(x, y, width, parseInt(font, 10));
+
+    ctx.fillStyle = '#fff';
+    ctx.fillText(txt, x, y);
+
+    ctx.restore();
 }
+
+  // if (repName !== undefined) {
+  //   repButton = createButton(repName)
+  //   repButton.parent('list-reps')
+  //   repButton.mousePressed(dataToCanvas);
+  // }
