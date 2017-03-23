@@ -200,13 +200,10 @@ function drawTextBG(ctx, txt, font, x, y) {
     ctx.font = font;
     ctx.textBaseline = 'top';
     ctx.fillStyle = '#000';
-
     var width = ctx.measureText(txt).width;
     ctx.fillRect(x, y, width, parseInt(font, 10));
-
     ctx.fillStyle = '#fff';
     ctx.fillText(txt, x, y);
-
     ctx.restore();
 }
 
