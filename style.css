@@ -36,3 +36,9 @@ body, h1 {
 #bigger {
   font-size: 30px;
 }
+
+#defaultCanvas0 {
+  object-fit: cover;
+  width: 50px;
+  height: 100px;
+}

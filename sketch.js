@@ -1,7 +1,3 @@
-// adapted from Daniel Shiffman's
-// Drag and Drop tutorial: https://www.youtube.com/watch?v=o4UmGrPst_c
-// Mad Libs Generator: https://www.youtube.com/watch?v=ziBO-U2_t3k
-
 // variables for tabletop.js values
 var rawData, selector, selectedState, fontsize, tempCanvas, context, issue;
 var currentSenator = {
@@ -12,11 +8,6 @@ var currentSenator = {
   'happy':''
 }
 
-
-
-//TODO: this needs to be an array that we can clear
-var repName;
-
 // canvas dimensions
 var w = 500;
 var h = w;
@@ -25,30 +16,14 @@ var h = w;
 var x = 10;
 var y = h - 350;
 
-var textSizeStart = 32;
 var textSizeSlider,
   canvas,
-  zip,
-  enterZip,
   clearButton,
   saveButton,
   repButton,
   img;
 
-// Offset mouse X and Y
-var offX, offY;
-function mousePressed() {
-  offX = mouseX - x;
-  offY = mouseY - y;
-}
-function mouseDragged() {
-  x = mouseX - offX;
-  y = mouseY - offY;
-  updateText();
-}
-
 function setup() {
-
   Tabletop.init( { key: 'https://docs.google.com/spreadsheets/d/1Yj83AF5q6sv2XTQ8ZGCX1ZrwDCFbtc_O7CidSPSEI0o/pubhtml',
                    callback: gotData,
                    simpleSheet: true } )
@@ -70,9 +45,9 @@ function setup() {
       selector.appendChild(el);
     }
 
-  // clearButton = createButton('Clear Canvas');
-  // clearButton.parent('actions');
-  // clearButton.mousePressed(clearCanvas);
+  clearButton = createButton('Clear Canvas');
+  clearButton.parent('actions');
+  clearButton.mousePressed(clearCanvas);
 
   saveButton = createButton('Save');
   saveButton.parent('actions');
@@ -85,14 +60,11 @@ function setup() {
   canvas.parent('canvas');
 } //setup over
 
-
-
 function updateText(e){
   console.log(textSizeSlider.value())
   fillImage(currentSenator.image, currentSenator.phone, currentSenator.name, textSizeSlider.value(), true)
 
 }
-
 
 // 'save' button
 function saveIt() {
@@ -100,10 +72,15 @@ function saveIt() {
   saveCanvas(canvas, 'Share_'+ currentSenator.name, 'jpg');
 }
 
+// 'clear canvas' button
+function clearCanvas() {
+  clear();
+  background(200);
+}
 
+// store spreadsheet data in rawData variable
 function gotData(data, tabletop) {
   rawData = data;
-  // console.log("rawData: ", rawData)
 }
 
 function findReps() {
@@ -127,39 +104,36 @@ function findReps() {
     }
   })
 
-var buttonA = document.createElement('button')
-var buttonB = document.createElement('button')
-buttonA.innerHTML = tempName[0]
-buttonB.innerHTML = tempName[1]
+  var buttonA = document.createElement('button')
+  var buttonB = document.createElement('button')
+  buttonA.innerHTML = tempName[0]
+  buttonB.innerHTML = tempName[1]
+  
+  document.getElementById('list-reps').append(buttonA)
+  document.getElementById('list-reps').append(buttonB)
+  
+  //TODO: put theses two buttons into one loop
+  buttonA.onclick = function() {
+    //update our temp json object with currentSenator stats
+    currentSenator.name = tempName[0];
+    currentSenator.phone = tempNum[0];
+    currentSenator.image = tempImg[0];
+    //get the rest of CurrentSenator stats from the spreadsheet
+    //would be better to return them but instead we build it in this fucntion
+    getSenatorvote(tempName[0])
+  };
 
-document.getElementById('list-reps').append(buttonA)
-document.getElementById('list-reps').append(buttonB)
-
-//TODO: put theses two buttons into one loop
-
-buttonA.onclick = function() {
-  //update our temp json object with currentSenator stats
-  currentSenator.name = tempName[0];
-  currentSenator.phone = tempNum[0];
-  currentSenator.image = tempImg[0];
-  //get the rest of CurrentSenator stats from the spreadsheet
-  //would be better to return them but instead we build it in this fucntion
-  getSenatorvote(tempName[0])
-};
-buttonB.onclick = function() {
-  //update our temp json object with currentSenator stats
-  currentSenator.name = tempName[1];
-  currentSenator.phone = tempNum[1];
-  currentSenator.image = tempImg[1];
-  //get the rest of CurrentSenator stats from the spreadsheet
-  getSenatorvote(tempName[1])
-  //why didn't this return corretly?
-  // currentSenator.vote = getSenatorvote(currentSenator.name);
-};
-
-
+  buttonB.onclick = function() {
+    //update our temp json object with currentSenator stats
+    currentSenator.name = tempName[1];
+    currentSenator.phone = tempNum[1];
+    currentSenator.image = tempImg[1];
+    //get the rest of CurrentSenator stats from the spreadsheet
+    getSenatorvote(tempName[1])
+    //why didn't this return corretly?
+    // currentSenator.vote = getSenatorvote(currentSenator.name);
+  };
 } //draw rep ends
-
 
 function fillImage(image, number, name, fontsize, refreshing){
   if (!fontsize){fontsize = 32}
@@ -181,7 +155,6 @@ function fillImage(image, number, name, fontsize, refreshing){
     drawTextBG(context, name, fontsize + 'px arial', 0, 130);
   }
 
-
   img.onload = function(){
     var ratio = img.width/img.height
     var divide = img.width / 500
@@ -191,24 +164,19 @@ function fillImage(image, number, name, fontsize, refreshing){
     drawTextBG(context, sentiment, fontsize  + 'px arial', 0, 450)
     drawTextBG(context, name + ' just voted on', fontsize + 'px arial', 0, 40);
     drawTextBG(context, issue, fontsize + 'px arial', 0, 80);
-
-};
-
+  };
 } //fill image ends
 
-
-
 function drawTextBG(ctx, txt, font, x, y) {
-
-    ctx.save();
-    ctx.font = font;
-    ctx.textBaseline = 'top';
-    ctx.fillStyle = 'rgba(40,40,40,.5)';
-    var width = ctx.measureText(txt).width;
-    ctx.fillRect(x, y, width, parseInt(font, 10));
-    ctx.fillStyle = '#fff';
-    ctx.fillText(txt, x, y);
-    ctx.restore();
+  ctx.save();
+  ctx.font = font;
+  ctx.textBaseline = 'top';
+  ctx.fillStyle = 'rgba(40,40,40,.5)';
+  var width = ctx.measureText(txt).width;
+  ctx.fillRect(x, y, width, parseInt(font, 10));
+  ctx.fillStyle = '#fff';
+  ctx.fillText(txt, x, y);
+  ctx.restore();
 }
 
 function getSenatorvote(name){
@@ -226,7 +194,4 @@ function getSenatorvote(name){
   console.log('current Senator: ' ,currentSenator)
   //now that we have all the data, draw it
   fillImage(currentSenator.image, currentSenator.phone, currentSenator.name)
-
-
-
 }
