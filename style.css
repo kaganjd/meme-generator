@@ -1,0 +1,38 @@
+body, h1 {
+  font-family: Helvetica;
+}
+
+#canvas {
+  position: absolute;
+}
+
+#actions {
+  position: relative;
+  left: 510px;
+  top: 50px;
+}
+
+#dashboard {
+  display: inline;
+}
+
+#slider-area {
+  position: relative;
+  left: 510px;
+  border: 1px solid;
+  padding: 5px;
+  text-align: center;
+  width: 220px;
+}
+
+#slider-area > div {
+  display: inline;
+}
+
+#smaller {
+  font-size: 12px;
+}
+
+#bigger {
+  font-size: 30px;
+}
