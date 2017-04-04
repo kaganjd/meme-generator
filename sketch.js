@@ -8,6 +8,8 @@ var currentSenator = {
   'happy':''
 }
 
+var repName, stateAbreviation;
+
 // canvas dimensions
 var w = 500;
 var h = w;
@@ -101,6 +103,8 @@ function findReps() {
       tempName.push(e.name)
       tempImg.push(e.image)
       tempNum.push(e.phone)
+      stateAbreviation = e.stateAb
+      hitPropublica(stateAbreviation);
     }
   })
 
@@ -113,6 +117,7 @@ function findReps() {
   document.getElementById('list-reps').append(buttonB)
   
   //TODO: put theses two buttons into one loop
+  
   buttonA.onclick = function() {
     //update our temp json object with currentSenator stats
     currentSenator.name = tempName[0];
@@ -121,8 +126,9 @@ function findReps() {
     //get the rest of CurrentSenator stats from the spreadsheet
     //would be better to return them but instead we build it in this fucntion
     getSenatorvote(tempName[0])
+    GetListofMembersfromPP(tempName[0])
+  
   };
-
   buttonB.onclick = function() {
     //update our temp json object with currentSenator stats
     currentSenator.name = tempName[1];
@@ -130,6 +136,7 @@ function findReps() {
     currentSenator.image = tempImg[1];
     //get the rest of CurrentSenator stats from the spreadsheet
     getSenatorvote(tempName[1])
+    GetListofMembersfromPP(tempName[1])
     //why didn't this return corretly?
     // currentSenator.vote = getSenatorvote(currentSenator.name);
   };
@@ -138,10 +145,10 @@ function findReps() {
 function fillImage(image, number, name, fontsize, refreshing){
   if (!fontsize){fontsize = 32}
   if (currentSenator.happy == "Y"){
-    console.log('we are happy')
+    // console.log('we are happy')
     var sentiment = 'THANK YOU'
   } else {
-    console.log('we opposed')
+    // console.log('we opposed')
     var sentiment = 'I OPPOSE'
   }
   var img = new Image;
@@ -191,7 +198,51 @@ function getSenatorvote(name){
       // return senator.happy;
     }
   })
-  console.log('current Senator: ' ,currentSenator)
+  // console.log('current Senator: ' ,currentSenator)
   //now that we have all the data, draw it
   fillImage(currentSenator.image, currentSenator.phone, currentSenator.name)
+}
+
+
+function hitPropublica(st){
+  $.ajax({
+           url: "https://api.propublica.org/congress/v1/members/senate/"+st+"/current.json",
+           type: "GET",
+           dataType: 'json',
+           headers: {'X-API-Key': 'AzuJWcFuUg3f0iLuL5zrl5M8RExaka469UWE81df'}
+         }).done(function(data){
+         getSenatorDetails(data.results)
+
+         });
+}
+
+function GetListofMembersfromPP(targetMember){
+  var targetMemberArray = targetMember.split(' ')
+  console.log('target is: ' +targetMemberArray)
+  $.ajax({
+           url: "  https://api.propublica.org/congress/v1/115/senate/members.json",
+           type: "GET",
+           dataType: 'json',
+           headers: {'X-API-Key': 'AzuJWcFuUg3f0iLuL5zrl5M8RExaka469UWE81df'}
+         }).done(function(data){
+          //  console.log(data.results[0].members.first_name)
+           data.results[0].members.forEach(function(names){
+            //  console.log(names)
+             if (names.first_name == targetMemberArray[0] && names.last_name == targetMemberArray[1]){
+               //reduce array now!
+               console.log('this is the selected person: ' , names)
+             } else {
+              //  console.log('no match')
+             }
+
+           });
+
+         });//ajax done
+}//main function done
+
+
+function getSenatorDetails(dataArray){
+  // console.log(dataArray)
+  dataArray.forEach(function(data){console.log(data)})
+
 }
