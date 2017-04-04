@@ -8,21 +8,15 @@ var currentSenator = {
   'happy':''
 }
 
-var repName, stateAbreviation;
-
 // canvas dimensions
 var w = 500;
 var h = w;
 
-// text positioning
-var x = 10;
-var y = h - 350;
-
-var textSizeSlider,
-  canvas,
+var canvas,
+  findButton,
   clearButton,
   saveButton,
-  repButton,
+  textSizeSlider,
   img;
 
 function setup() {
@@ -31,21 +25,23 @@ function setup() {
                    simpleSheet: true } )
 
   canvas = createCanvas(w, h);
+  canvas.parent('canvas');
   background(200);
 
-  findButton = document.getElementById('find')
-  findButton.onclick = findReps;
   selector = document.getElementById("state-dropdown");
 
-  //add state dropdowmn options
+  // create state dropdown list from 'senators' array in databaseA.js
   for (var i = 0; i < senators.length; i+=2) {
       var opt = senators[i].state;
-      // console.log(opt);
       var el = document.createElement("option");
       el.textContent = opt;
       el.value = opt;
       selector.appendChild(el);
     }
+
+  findButton = createButton('Find')
+  findButton.parent('check-zip')
+  findButton.mousePressed(findReps);
 
   clearButton = createButton('Clear Canvas');
   clearButton.parent('actions');
@@ -57,29 +53,17 @@ function setup() {
 
   textSizeSlider = createSlider(5, 100, 32);
   textSizeSlider.parent('size-slider');
-  textSizeSlider.input(updateText);
-
-  canvas.parent('canvas');
-} //setup over
-
-function updateText(e){
-  console.log(textSizeSlider.value())
-  fillImage(currentSenator.image, currentSenator.phone, currentSenator.name, textSizeSlider.value(), true)
-
+  textSizeSlider.input(updateTextSize);
 }
-
 // 'save' button
 function saveIt() {
-  console.log('you MUST run a local server to download image')
   saveCanvas(canvas, 'Share_'+ currentSenator.name, 'jpg');
 }
-
 // 'clear canvas' button
 function clearCanvas() {
   clear();
   background(200);
 }
-
 // store spreadsheet data in rawData variable
 function gotData(data, tabletop) {
   rawData = data;
@@ -90,67 +74,61 @@ function findReps() {
   var tempImg = []
   var tempNum = []
 
-  document.getElementById('check-zip').innerHTML = "<button id='find'>Find</button>"
-  //empty the list
   document.getElementById('list-reps').innerHTML = ''
-  findButton = document.getElementById('find')
-  findButton.onclick = findReps;
   //get value from dropdown
   selectedState = selector.options[selector.selectedIndex].value;
   senators.forEach(function(e){
-    //make a list of two senators fronm that state
-    if (e.state == selectedState){
+    //make a list of two senators from that state
+    if (e.state == selectedState) {
       tempName.push(e.name)
       tempImg.push(e.image)
       tempNum.push(e.phone)
-      stateAbreviation = e.stateAb
-      hitPropublica(stateAbreviation);
+      hitPropublica(e.stateAb);
     }
   })
 
-  var buttonA = document.createElement('button')
-  var buttonB = document.createElement('button')
-  buttonA.innerHTML = tempName[0]
-  buttonB.innerHTML = tempName[1]
+  var buttonA = createButton(tempName[0])
+  buttonA.parent('list-reps')
+  buttonA.mousePressed(fillA)
+
+  var buttonB = createButton(tempName[1])
+  buttonB.parent('list-reps')
+  buttonB.mousePressed(fillB)
   
-  document.getElementById('list-reps').append(buttonA)
-  document.getElementById('list-reps').append(buttonB)
-  
-  //TODO: put theses two buttons into one loop
-  
-  buttonA.onclick = function() {
+  function fillA() {
     //update our temp json object with currentSenator stats
     currentSenator.name = tempName[0];
     currentSenator.phone = tempNum[0];
     currentSenator.image = tempImg[0];
     //get the rest of CurrentSenator stats from the spreadsheet
     //would be better to return them but instead we build it in this fucntion
-    getSenatorvote(tempName[0])
-    GetListofMembersfromPP(tempName[0])
-  
+    getSenatorVote(tempName[0])
+    matchSenatorName(tempName[0])
   };
-  buttonB.onclick = function() {
+  function fillB() {
     //update our temp json object with currentSenator stats
     currentSenator.name = tempName[1];
     currentSenator.phone = tempNum[1];
     currentSenator.image = tempImg[1];
     //get the rest of CurrentSenator stats from the spreadsheet
-    getSenatorvote(tempName[1])
-    GetListofMembersfromPP(tempName[1])
+    getSenatorVote(tempName[1])
+    matchSenatorName(tempName[1])
     //why didn't this return corretly?
-    // currentSenator.vote = getSenatorvote(currentSenator.name);
+    // currentSenator.vote = getSenatorVote(currentSenator.name);
   };
 } //draw rep ends
 
 function fillImage(image, number, name, fontsize, refreshing){
-  if (!fontsize){fontsize = 32}
-  if (currentSenator.happy == "Y"){
-    // console.log('we are happy')
+  if (!fontsize) {
+    fontsize = 32
+  }
+
+  if (currentSenator.happy == "Y") {
     var sentiment = 'THANK YOU'
   } else {
-    // console.log('we opposed')
     var sentiment = 'I OPPOSE'
   }
+
   var img = new Image;
   img.src = image;
   img.crossOrigin = 'Anonymous'
@@ -174,6 +152,14 @@ function fillImage(image, number, name, fontsize, refreshing){
   };
 } //fill image ends
 
+function updateTextSize(event){
+  fillImage(currentSenator.image,
+    currentSenator.phone,
+    currentSenator.name,
+    textSizeSlider.value(),
+    true)
+}
+
 function drawTextBG(ctx, txt, font, x, y) {
   ctx.save();
   ctx.font = font;
@@ -186,7 +172,7 @@ function drawTextBG(ctx, txt, font, x, y) {
   ctx.restore();
 }
 
-function getSenatorvote(name){
+function getSenatorVote(name){
   rawData[0].issue = issue
   //look through all of rawData, find senator name
   rawData.forEach(function(senator){
@@ -198,51 +184,45 @@ function getSenatorvote(name){
       // return senator.happy;
     }
   })
-  // console.log('current Senator: ' ,currentSenator)
-  //now that we have all the data, draw it
+  // now that we have all the data, draw it
+  // TODO: get fillImage out of this function
   fillImage(currentSenator.image, currentSenator.phone, currentSenator.name)
 }
 
-
-function hitPropublica(st){
+function hitPropublica(stateAbbrev){
   $.ajax({
-           url: "https://api.propublica.org/congress/v1/members/senate/"+st+"/current.json",
+           url: "https://api.propublica.org/congress/v1/members/senate/"+stateAbbrev+"/current.json",
            type: "GET",
            dataType: 'json',
            headers: {'X-API-Key': 'AzuJWcFuUg3f0iLuL5zrl5M8RExaka469UWE81df'}
-         }).done(function(data){
-         getSenatorDetails(data.results)
-
-         });
+         }).done(function(data) {
+          logSenatorDetails(data.results)
+         }); // ajax done
 }
 
-function GetListofMembersfromPP(targetMember){
+function matchSenatorName(targetMember){
   var targetMemberArray = targetMember.split(' ')
-  console.log('target is: ' +targetMemberArray)
+  console.log('Target is: ', targetMemberArray)
   $.ajax({
-           url: "  https://api.propublica.org/congress/v1/115/senate/members.json",
+           url: "https://api.propublica.org/congress/v1/115/senate/members.json",
            type: "GET",
            dataType: 'json',
            headers: {'X-API-Key': 'AzuJWcFuUg3f0iLuL5zrl5M8RExaka469UWE81df'}
-         }).done(function(data){
-          //  console.log(data.results[0].members.first_name)
-           data.results[0].members.forEach(function(names){
-            //  console.log(names)
-             if (names.first_name == targetMemberArray[0] && names.last_name == targetMemberArray[1]){
-               //reduce array now!
-               console.log('this is the selected person: ' , names)
-             } else {
-              //  console.log('no match')
-             }
+         }).done(function(data) {
+           logMemberName(data.results[0].members)
+         }); // ajax done
+  
+  function logMemberName(dataArray) {
+    dataArray.forEach(function(names) {
+      if (names.first_name == targetMemberArray[0] && names.last_name == targetMemberArray[1]) {
+        console.log('This is the selected person: ', names)
+      }
+    });
+  }
+}
 
-           });
-
-         });//ajax done
-}//main function done
-
-
-function getSenatorDetails(dataArray){
-  // console.log(dataArray)
-  dataArray.forEach(function(data){console.log(data)})
-
+function logSenatorDetails(dataArray){
+  dataArray.forEach(function(data) {
+    console.log(data)
+  })
 }
