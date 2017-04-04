@@ -12,6 +12,10 @@ var currentSenator = {
 var w = 500;
 var h = w;
 
+function preload() {
+  senators = loadJSON('senators.json');
+}
+
 var canvas,
   findButton,
   clearButton,
@@ -20,6 +24,19 @@ var canvas,
   img;
 
 function setup() {
+  // to re-org databaseA.js by state:
+  // for (var i = 0; i < senators.length; i++) {
+  //   var state = senators[i].state;
+  //   if (senatorsByState[state] == undefined) {
+  //     senatorsByState[state] = [];
+  //     senatorsByState[state].push(senators[i]);
+  //   } else {
+  //     senatorsByState[state].push(senators[i]);      
+  //   }
+  // }
+  // console.log(senatorsByState);
+  // saveJSON(senatorsByState,'senators2.json');
+
   Tabletop.init( { key: 'https://docs.google.com/spreadsheets/d/1Yj83AF5q6sv2XTQ8ZGCX1ZrwDCFbtc_O7CidSPSEI0o/pubhtml',
                    callback: gotData,
                    simpleSheet: true } )
@@ -30,9 +47,11 @@ function setup() {
 
   selector = document.getElementById("state-dropdown");
 
+  var states = Object.keys(senators);
+
   // create state dropdown list from 'senators' array in databaseA.js
-  for (var i = 0; i < senators.length; i+=2) {
-      var opt = senators[i].state;
+  for (var i = 0; i < states.length; i++) {
+      var opt = states[i];
       var el = document.createElement("option");
       el.textContent = opt;
       el.value = opt;
@@ -70,52 +89,25 @@ function gotData(data, tabletop) {
 }
 
 function findReps() {
-  var tempName = []
-  var tempImg = []
-  var tempNum = []
-
-  document.getElementById('list-reps').innerHTML = ''
-  //get value from dropdown
   selectedState = selector.options[selector.selectedIndex].value;
-  senators.forEach(function(e){
-    //make a list of two senators from that state
-    if (e.state == selectedState) {
-      tempName.push(e.name)
-      tempImg.push(e.image)
-      tempNum.push(e.phone)
-      hitPropublica(e.stateAb);
+  var selectedSenators = senators[selectedState];
+  console.log(selectedSenators);
+
+  function setSenator(button, senator) {
+    function assignSenator() {
+      currentSenator = senator;
+      getSenatorVote(senator.name)
+      matchSenatorName(senator.name)
+      console.log(currentSenator);
     }
-  })
+    button.mousePressed(assignSenator);
+  }
 
-  var buttonA = createButton(tempName[0])
-  buttonA.parent('list-reps')
-  buttonA.mousePressed(fillA)
-
-  var buttonB = createButton(tempName[1])
-  buttonB.parent('list-reps')
-  buttonB.mousePressed(fillB)
-  
-  function fillA() {
-    //update our temp json object with currentSenator stats
-    currentSenator.name = tempName[0];
-    currentSenator.phone = tempNum[0];
-    currentSenator.image = tempImg[0];
-    //get the rest of CurrentSenator stats from the spreadsheet
-    //would be better to return them but instead we build it in this fucntion
-    getSenatorVote(tempName[0])
-    matchSenatorName(tempName[0])
-  };
-  function fillB() {
-    //update our temp json object with currentSenator stats
-    currentSenator.name = tempName[1];
-    currentSenator.phone = tempNum[1];
-    currentSenator.image = tempImg[1];
-    //get the rest of CurrentSenator stats from the spreadsheet
-    getSenatorVote(tempName[1])
-    matchSenatorName(tempName[1])
-    //why didn't this return corretly?
-    // currentSenator.vote = getSenatorVote(currentSenator.name);
-  };
+  for (var i = 0; i < selectedSenators.length; i++) {
+    var button = createButton(selectedSenators[i].name)
+    button.parent('list-reps');
+    setSenator(button, selectedSenators[i]);
+  }
 } //draw rep ends
 
 function fillImage(image, number, name, fontsize, refreshing){
