@@ -1,9 +1,13 @@
 // variables for tabletop.js values
-var rawData, selector, selectedState, fontsize, tempCanvas, context, issue;
+var rawData, 
+  selector, 
+  selectedState, 
+  fontsize, 
+  tempCanvas, 
+  context, 
+  issue;
+
 var currentSenator = {
-  'name': '',
-  'image': '',
-  'phone': '',
   'vote': '',
   'happy':''
 }
@@ -24,19 +28,6 @@ var canvas,
   img;
 
 function setup() {
-  // to re-org databaseA.js by state:
-  // for (var i = 0; i < senators.length; i++) {
-  //   var state = senators[i].state;
-  //   if (senatorsByState[state] == undefined) {
-  //     senatorsByState[state] = [];
-  //     senatorsByState[state].push(senators[i]);
-  //   } else {
-  //     senatorsByState[state].push(senators[i]);      
-  //   }
-  // }
-  // console.log(senatorsByState);
-  // saveJSON(senatorsByState,'senators2.json');
-
   Tabletop.init( { key: 'https://docs.google.com/spreadsheets/d/1Yj83AF5q6sv2XTQ8ZGCX1ZrwDCFbtc_O7CidSPSEI0o/pubhtml',
                    callback: gotData,
                    simpleSheet: true } )
@@ -45,11 +36,10 @@ function setup() {
   canvas.parent('canvas');
   background(200);
 
-  selector = document.getElementById("state-dropdown");
-
-  var states = Object.keys(senators);
-
   // create state dropdown list from 'senators' array in databaseA.js
+  // TODO: rewrite dropdown in p5
+  selector = document.getElementById("state-dropdown");
+  var states = Object.keys(senators);
   for (var i = 0; i < states.length; i++) {
       var opt = states[i];
       var el = document.createElement("option");
@@ -74,11 +64,11 @@ function setup() {
   textSizeSlider.parent('size-slider');
   textSizeSlider.input(updateTextSize);
 }
-// 'save' button
+
 function saveIt() {
-  saveCanvas(canvas, 'Share_'+ currentSenator.name, 'jpg');
+  saveCanvas(canvas, 'Share_'+ senator.name, 'jpg');
 }
-// 'clear canvas' button
+
 function clearCanvas() {
   clear();
   background(200);
@@ -88,25 +78,25 @@ function gotData(data, tabletop) {
   rawData = data;
 }
 
+// this function performs a lookup of senators based on the state selected from the dropdown.
+// then, it creates a button for each senator returned by the lookup, 
+// puts the button in the 'list-reps' div, 
+// and calls the assignSenator function on button click
 function findReps() {
   selectedState = selector.options[selector.selectedIndex].value;
   var selectedSenators = senators[selectedState];
-  console.log(selectedSenators);
-
-  function setSenator(button, senator) {
-    function assignSenator() {
-      currentSenator = senator;
-      getSenatorVote(senator.name)
-      matchSenatorName(senator.name)
-      console.log(currentSenator);
-    }
-    button.mousePressed(assignSenator);
-  }
-
   for (var i = 0; i < selectedSenators.length; i++) {
     var button = createButton(selectedSenators[i].name)
     button.parent('list-reps');
     setSenator(button, selectedSenators[i]);
+  }
+  function setSenator(button, senator) {
+    function assignSenator() {
+      fillImage(senator.image, senator.phone, senator.name)
+      // TODO: function below should get repId, then use repId to get bill names
+      matchSenatorName(senator.name)
+    }
+    button.mousePressed(assignSenator);
   }
 } //draw rep ends
 
@@ -145,9 +135,10 @@ function fillImage(image, number, name, fontsize, refreshing){
 } //fill image ends
 
 function updateTextSize(event){
-  fillImage(currentSenator.image,
-    currentSenator.phone,
-    currentSenator.name,
+  fillImage(
+    senator.image,
+    senator.phone,
+    senator.name,
     textSizeSlider.value(),
     true)
 }
@@ -164,57 +155,46 @@ function drawTextBG(ctx, txt, font, x, y) {
   ctx.restore();
 }
 
-function getSenatorVote(name){
-  rawData[0].issue = issue
-  //look through all of rawData, find senator name
-  rawData.forEach(function(senator){
-    if (name == senator.name){
-      //update local json of currentSenator
-      currentSenator.vote = senator.their_vote
-      currentSenator.happy = senator.happy
-      //why didn't return work?
-      // return senator.happy;
-    }
-  })
-  // now that we have all the data, draw it
-  // TODO: get fillImage out of this function
-  fillImage(currentSenator.image, currentSenator.phone, currentSenator.name)
-}
+// this function uses the propublica api to get recent bills by a specific member: 
+// https://propublica.github.io/congress-api-docs/#get-recent-bills-by-a-specific-member
+// TODO: figure out 'introduced' vs. 'updated' args
+// function getBill(repId, type) {
+//   var type = 'updated'
+//   console.log('getBill repId: ', repId);
+//   $.ajax({
+//            url: "https://api.propublica.org/congress/v1/members/"+repId+"/bills/"+type+".json",
+//            type: "GET",
+//            dataType: 'json',
+//            headers: {'X-API-Key': 'AzuJWcFuUg3f0iLuL5zrl5M8RExaka469UWE81df'}
+//          }).done(function(data) {
+//           console.log("Bill number: ", data.results[0].bills[0].bill_id)
+//          });
+// }
 
-function hitPropublica(stateAbbrev){
-  $.ajax({
-           url: "https://api.propublica.org/congress/v1/members/senate/"+stateAbbrev+"/current.json",
-           type: "GET",
-           dataType: 'json',
-           headers: {'X-API-Key': 'AzuJWcFuUg3f0iLuL5zrl5M8RExaka469UWE81df'}
-         }).done(function(data) {
-          logSenatorDetails(data.results)
-         }); // ajax done
-}
+// this function uses the propublica api to get senate members: 
+// https://propublica.github.io/congress-api-docs/#lists-of-members
+// function matchSenatorName(targetMember){
+//   var targetMemberArray = targetMember.split(' ')
+//   var allMembers = data.results[0].members
+//   var repId = allMembers.id
+//   $.ajax({
+//            url: "https://api.propublica.org/congress/v1/115/senate/members.json",
+//            type: "GET",
+//            dataType: 'json',
+//            headers: {'X-API-Key': 'AzuJWcFuUg3f0iLuL5zrl5M8RExaka469UWE81df'}
+//          }).done(function(data) {
+//            // log all the member objects
+//            console.log('targetMember: ', data.results[0].members)
+//            logMemberName(data.results[0].members);
+//          });
+//   // only log the name if it's the correct one
+//   function logMemberName(dataArray) {
+//     dataArray.forEach(function(names) {
+//       if (names.first_name == targetMemberArray[0] && names.last_name == targetMemberArray[1]) {
+//         console.log('This is the selected person: ', names)
+//       }
+//     });
+//   }
+// }
 
-function matchSenatorName(targetMember){
-  var targetMemberArray = targetMember.split(' ')
-  console.log('Target is: ', targetMemberArray)
-  $.ajax({
-           url: "https://api.propublica.org/congress/v1/115/senate/members.json",
-           type: "GET",
-           dataType: 'json',
-           headers: {'X-API-Key': 'AzuJWcFuUg3f0iLuL5zrl5M8RExaka469UWE81df'}
-         }).done(function(data) {
-           logMemberName(data.results[0].members)
-         }); // ajax done
-  
-  function logMemberName(dataArray) {
-    dataArray.forEach(function(names) {
-      if (names.first_name == targetMemberArray[0] && names.last_name == targetMemberArray[1]) {
-        console.log('This is the selected person: ', names)
-      }
-    });
-  }
-}
 
-function logSenatorDetails(dataArray){
-  dataArray.forEach(function(data) {
-    console.log(data)
-  })
-}
