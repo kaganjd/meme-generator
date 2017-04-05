@@ -1,6 +1,5 @@
 // startDate and endDate must be in the form "YYYY-MM-DD"
 // chamber can either be "senate" or "house"
-// TODO: dynamic dates
 function getBills(chamber, startDate, endDate) {
   $.ajax({
     url: "https://api.propublica.org/congress/v1/"+chamber+"/votes/"+startDate+"/"+endDate+".json",
@@ -8,19 +7,33 @@ function getBills(chamber, startDate, endDate) {
     dataType: 'json',
     headers: {'X-API-Key': 'AzuJWcFuUg3f0iLuL5zrl5M8RExaka469UWE81df'}
   }).done(function(data) {
+    var dateObj = {}
+    dateObj.rollCalls = []
+    dateObj.billNums = []
+    dateObj.summaries = []
     var votesList = data.results.votes
     for (var i = 0; i < votesList.length; i++) {
       var rollCall = votesList[i].roll_call
-      // if (votesList[i].bill.number !== undefined) {
-      //   var billNumber = votesList[i].bill.number
-      // }
+      if (votesList[i].nomination) {
+        var billNumber = votesList[i].nomination.number
+      } else if (votesList[i].bill){
+        var billNumber = votesList[i].bill.number
+      }
       var desc = votesList[i].description
-      console.log("roll call: ", rollCall + '\n' + "bill summary: ", desc + '\n'
-        // + "bill number: ", billNumber
-        )
+      dateObj.rollCalls.push(rollCall)
+      dateObj.billNums.push(billNumber)
+      dateObj.summaries.push(desc)
+      // console.log("roll call: ", rollCall + '\n' +
+      //    "bill or nomination number: ", billNumber + '\n' +
+      //    "summary: ", desc)
     }
+    saveJSON(dateObj, 'bills.json');
   });
 }
+
+
+getBills("senate", "2017-03-24", getToday())
+
 
 // http://stackoverflow.com/questions/12409299/how-to-get-current-formatted-date-dd-mm-yyyy-in-javascript-and-append-it-to-an-i
 function getToday() {
@@ -36,5 +49,3 @@ function getToday() {
   } 
   return today = yyyy+ '-' + mm + '-' + dd;
 }
-
-getBills("senate", "2017-03-24", getToday())
