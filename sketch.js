@@ -12,6 +12,8 @@ var currentSenator = {
   'happy':''
 }
 
+var repId;
+
 // canvas dimensions
 var w = 500;
 var h = w;
@@ -78,10 +80,10 @@ function gotData(data, tabletop) {
   rawData = data;
 }
 
-// this function performs a lookup of senators based on the state selected from the dropdown.
-// then, it creates a button for each senator returned by the lookup, 
-// puts the button in the 'list-reps' div, 
-// and calls the assignSenator function on button click
+// this function performs a lookup of senators based on the state selected 
+// from the dropdown. then, it creates a button for each senator returned by 
+// the lookup, puts the button in the 'list-reps' div, and calls the 
+// assignSenator function on button click
 function findReps() {
   selectedState = selector.options[selector.selectedIndex].value;
   var selectedSenators = senators[selectedState];
@@ -93,7 +95,6 @@ function findReps() {
   function setSenator(button, senator) {
     function assignSenator() {
       fillImage(senator.image, senator.phone, senator.name)
-      // TODO: function below should get repId, then use repId to get bill names
       matchSenatorName(senator.name)
     }
     button.mousePressed(assignSenator);
@@ -158,43 +159,57 @@ function drawTextBG(ctx, txt, font, x, y) {
 // this function uses the propublica api to get recent bills by a specific member: 
 // https://propublica.github.io/congress-api-docs/#get-recent-bills-by-a-specific-member
 // TODO: figure out 'introduced' vs. 'updated' args
-// function getBill(repId, type) {
-//   var type = 'updated'
-//   console.log('getBill repId: ', repId);
+// function getBill(repId) {
 //   $.ajax({
-//            url: "https://api.propublica.org/congress/v1/members/"+repId+"/bills/"+type+".json",
+//            url: "https://api.propublica.org/congress/v1/members/"+repId+"/bills/updated.json",
 //            type: "GET",
 //            dataType: 'json',
 //            headers: {'X-API-Key': 'AzuJWcFuUg3f0iLuL5zrl5M8RExaka469UWE81df'}
 //          }).done(function(data) {
-//           console.log("Bill number: ", data.results[0].bills[0].bill_id)
+//           var billList = data.results[0].bills;
+//             for (var i = 0; i < billList.length; i++) {
+//               var bill = billList[i].bill_id
+//               console.log(bill)
+//             }
 //          });
 // }
 
-// this function uses the propublica api to get senate members: 
+// https://propublica.github.io/congress-api-docs/#get-a-specific-roll-call-vote
+function getVote(rollCall, repId) {
+  $.ajax({
+           url: "https://api.propublica.org/congress/v1/115/senate/sessions/1/votes/"+rollCall+".json",
+           type: "GET",
+           dataType: 'json',
+           headers: {'X-API-Key': 'AzuJWcFuUg3f0iLuL5zrl5M8RExaka469UWE81df'}
+         }).done(function(data) {
+          var positions = data.results.votes.vote.positions
+          for (var i = 0; i < positions.length; i++) {
+            console.log('id: ', positions[i].member_id)
+            console.log('vote: ', positions[i].vote_position)
+          }
+        });
+}
+
+// this function uses the propublica api to match a senator's name to his/her bio id: 
 // https://propublica.github.io/congress-api-docs/#lists-of-members
-// function matchSenatorName(targetMember){
-//   var targetMemberArray = targetMember.split(' ')
-//   var allMembers = data.results[0].members
-//   var repId = allMembers.id
-//   $.ajax({
-//            url: "https://api.propublica.org/congress/v1/115/senate/members.json",
-//            type: "GET",
-//            dataType: 'json',
-//            headers: {'X-API-Key': 'AzuJWcFuUg3f0iLuL5zrl5M8RExaka469UWE81df'}
-//          }).done(function(data) {
-//            // log all the member objects
-//            console.log('targetMember: ', data.results[0].members)
-//            logMemberName(data.results[0].members);
-//          });
-//   // only log the name if it's the correct one
-//   function logMemberName(dataArray) {
-//     dataArray.forEach(function(names) {
-//       if (names.first_name == targetMemberArray[0] && names.last_name == targetMemberArray[1]) {
-//         console.log('This is the selected person: ', names)
-//       }
-//     });
-//   }
-// }
+function matchSenatorName(senator){
+  $.ajax({
+           url: "https://api.propublica.org/congress/v1/115/senate/members.json",
+           type: "GET",
+           dataType: 'json',
+           headers: {'X-API-Key': 'AzuJWcFuUg3f0iLuL5zrl5M8RExaka469UWE81df'}
+         }).done(function(data) {
+          var memberList = data.results[0].members;
+          for (var i = 0; i < memberList.length; i++) {
+            var name = memberList[i].first_name + ' ' + memberList[i].last_name;
+            if (name.indexOf(senator) > -1 ) {
+              repId = (memberList[i].id).toString()
+              // getBill(repId)
+              getVote("17", repId)
+              break;
+            }
+          }
+        })
+}
 
 
