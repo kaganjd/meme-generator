@@ -9,9 +9,12 @@ var rawData,
 
 var repId;
 
-// canvas dimensions
+// square canvas dimensions
 var w = 500;
-var h = w;
+// meme text positioning and size
+var x = 10;
+var ts = 40;
+var rightTextMargin = w - x;
 
 function preload() {
   senators = loadJSON('senators.json');
@@ -22,15 +25,14 @@ var canvas,
   findButton,
   clearButton,
   saveButton,
-  textSizeSlider,
-  img;
+  textSizeSlider;
 
 function setup() {
   Tabletop.init( { key: 'https://docs.google.com/spreadsheets/d/1Yj83AF5q6sv2XTQ8ZGCX1ZrwDCFbtc_O7CidSPSEI0o/pubhtml',
                    callback: gotData,
                    simpleSheet: true } )
 
-  canvas = createCanvas(w, h);
+  canvas = createCanvas(w, w);
   canvas.parent('canvas');
   background(200);
 
@@ -57,10 +59,6 @@ function setup() {
   saveButton = createButton('Save');
   saveButton.parent('actions');
   saveButton.mousePressed(saveIt);
-
-  textSizeSlider = createSlider(5, 100, 32);
-  textSizeSlider.parent('size-slider');
-  textSizeSlider.input(updateTextSize);
 }
 
 function saveIt() {
@@ -81,6 +79,7 @@ function gotData(data, tabletop) {
 // the lookup, puts the button in the 'list-reps' div, and calls the 
 // assignSenator function on button click
 function findReps() {
+  clearCanvas();
   selectedState = selector.options[selector.selectedIndex].value;
   var selectedSenators = senators[selectedState];
   for (var i = 0; i < selectedSenators.length; i++) {
@@ -90,48 +89,63 @@ function findReps() {
   }
   function setSenator(button, senator) {
     function assignSenator() {
-      fillImage(senator.image, senator.phone, senator.name)
+      getImage(senator.image)
+      getMsg(senator.name, senator.phone)
+      // fillImage(senator.image, senator.phone, senator.name)
       matchSenatorName("senate", senator.name)
     }
     button.mousePressed(assignSenator);
   }
 } //draw rep ends
 
-function fillImage(image, number, name, fontsize, refreshing){
-  if (!fontsize) {
-    fontsize = 32
-  }
-  var img = new Image;
-  img.src = image;
-  img.crossOrigin = 'Anonymous'
-  var tempDiv = document.getElementById('image-here');
-  tempCanvas = document.getElementById('defaultCanvas0'),
-  context = tempCanvas.getContext('2d');
-  if (!refreshing){
-    drawTextBG(context, "PLEASE WAIT, LOADING IMAGE OF", fontsize + 'px arial', 0, 100);
-    drawTextBG(context, name, fontsize + 'px arial', 0, 130);
-  }
-
-  img.onload = function(){
-    var ratio = img.width/img.height
-    var divide = img.width / 500
-    var height = img.height / divide
-    context.drawImage(img,0,0,500,height);
-    drawTextBG(context, "CALL: " + number + ' To Say', fontsize + 'px arial', 0, 400);
-    drawTextBG(context, sentiment, fontsize  + 'px arial', 0, 450)
-    drawTextBG(context, name + ' just voted on', fontsize + 'px arial', 0, 40);
-    drawTextBG(context, issue, fontsize + 'px arial', 0, 80);
-  };
-} //fill image ends
-
-function updateTextSize(event){
-  fillImage(
-    senator.image,
-    senator.phone,
-    senator.name,
-    textSizeSlider.value(),
-    true)
+function getImage(imgUrl) {
+  var img = createImg(imgUrl);
+  img.hide()
+  console.log
+  var ratio = img.width / img.height
+  var divide = img.width / w
+  var height = img.height / divide
+  image(img, 0, 0, w, height)
 }
+
+function getMsg(name, phone, sentiment, vote, bill) {
+  textSize(ts);
+  // Call 208-980-2091 to say "I oppose!"
+  // Rep. Murray just voted "No" on RB. 157
+  var top = "Call " + phone + " to say " + sentiment;
+  var bottom = name + " just voted " + vote + " on " + bill;
+  text(top, x, w - 450, rightTextMargin, w);
+  text(bottom, x, w - 150, rightTextMargin, w);
+}
+
+// function fillImage(image, number, name, fontsize, refreshing){
+//   if (!fontsize) {
+//     fontsize = 32
+//   }
+//   // using vanilla JS instead of p5 here to draw image to canvas from URL
+//   // see https://github.com/processing/p5.js/issues/561
+//   var img = new Image;
+//   img.src = image;
+//   img.crossOrigin = 'Anonymous'
+//   var tempDiv = document.getElementById('canvas')
+//   tempCanvas = document.getElementById('defaultCanvas0'),
+//   context = tempCanvas.getContext('2d');
+//   if (!refreshing){
+//     drawTextBG(context, "PLEASE WAIT, LOADING IMAGE OF", fontsize + 'px arial', 0, 100);
+//     drawTextBG(context, name, fontsize + 'px arial', 0, 130);
+//   }
+
+//   img.onload = function(){
+//     var ratio = img.width/img.height
+//     var divide = img.width / 500
+//     var height = img.height / divide
+//     context.drawImage(img,0,0,500,height);
+//     drawTextBG(context, "CALL: " + number + ' To Say', fontsize + 'px arial', 0, 400);
+//     // drawTextBG(context, sentiment, fontsize  + 'px arial', 0, 450)
+//     drawTextBG(context, name + ' just voted on', fontsize + 'px arial', 0, 40);
+//     drawTextBG(context, issue, fontsize + 'px arial', 0, 80);
+//   };
+// } //fill image ends
 
 function drawTextBG(ctx, txt, font, x, y) {
   ctx.save();
