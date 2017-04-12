@@ -7,11 +7,6 @@ var rawData,
   context, 
   issue;
 
-var currentSenator = {
-  'vote': '',
-  'happy':''
-}
-
 var repId;
 
 // canvas dimensions
@@ -20,6 +15,7 @@ var h = w;
 
 function preload() {
   senators = loadJSON('senators.json');
+  // testImg = loadImage('test.png')
 }
 
 var canvas,
@@ -95,7 +91,7 @@ function findReps() {
   function setSenator(button, senator) {
     function assignSenator() {
       fillImage(senator.image, senator.phone, senator.name)
-      matchSenatorName(senator.name)
+      matchSenatorName("senate", senator.name)
     }
     button.mousePressed(assignSenator);
   }
@@ -105,13 +101,6 @@ function fillImage(image, number, name, fontsize, refreshing){
   if (!fontsize) {
     fontsize = 32
   }
-
-  if (currentSenator.happy == "Y") {
-    var sentiment = 'THANK YOU'
-  } else {
-    var sentiment = 'I OPPOSE'
-  }
-
   var img = new Image;
   img.src = image;
   img.crossOrigin = 'Anonymous'
@@ -174,7 +163,9 @@ function drawTextBG(ctx, txt, font, x, y) {
 //          });
 // }
 
+// this function uses the propublica api to return how a particular rep voted on a bill
 // https://propublica.github.io/congress-api-docs/#get-a-specific-roll-call-vote
+// takes two arguments: roll call # and rep's 7-character bio id, both as strings
 function getVote(rollCall, repId) {
   $.ajax({
            url: "https://api.propublica.org/congress/v1/115/senate/sessions/1/votes/"+rollCall+".json",
@@ -184,17 +175,24 @@ function getVote(rollCall, repId) {
          }).done(function(data) {
           var positions = data.results.votes.vote.positions
           for (var i = 0; i < positions.length; i++) {
-            console.log('id: ', positions[i].member_id)
-            console.log('vote: ', positions[i].vote_position)
+            var repIdToCheck = positions[i].member_id
+            console.log('repId: ', repId)
+            console.log('repIdToCheck: ', repIdToCheck)
+            if (repIdToCheck.indexOf(repId) > -1) {
+              var position = positions[i].vote_position
+              console.log(position)
+              break;
+            }
           }
         });
 }
 
 // this function uses the propublica api to match a senator's name to his/her bio id: 
 // https://propublica.github.io/congress-api-docs/#lists-of-members
-function matchSenatorName(senator){
+// takes two arguments: chamber can either be 'senate' or 'house'; 'senator' is first name + last name
+function matchSenatorName(chamber, senator){
   $.ajax({
-           url: "https://api.propublica.org/congress/v1/115/senate/members.json",
+           url: "https://api.propublica.org/congress/v1/115/"+chamber+"/members.json",
            type: "GET",
            dataType: 'json',
            headers: {'X-API-Key': 'AzuJWcFuUg3f0iLuL5zrl5M8RExaka469UWE81df'}
