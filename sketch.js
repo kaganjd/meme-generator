@@ -8,6 +8,7 @@ var rawData,
   issue;
 
 var repId;
+var rollCalls = []
 
 // square canvas dimensions
 var w = 500;
@@ -18,7 +19,6 @@ var rightTextBound = w - x;
 
 function preload() {
   senators = loadJSON('senators.json');
-  // testImg = loadImage('test.png')
 }
 
 var canvas,
@@ -28,7 +28,7 @@ var canvas,
   textSizeSlider;
 
 function setup() {
-  Tabletop.init( { key: 'https://docs.google.com/spreadsheets/d/1Yj83AF5q6sv2XTQ8ZGCX1ZrwDCFbtc_O7CidSPSEI0o/pubhtml',
+  Tabletop.init( { key: 'https://docs.google.com/spreadsheets/d/1oWAFQIIRZneiAQAXRvJ1S4K_Lall0DY_A8WGIVawXpc/pubhtml',
                    callback: gotData,
                    simpleSheet: true } )
 
@@ -72,6 +72,10 @@ function clearCanvas() {
 // store spreadsheet data in rawData variable
 function gotData(data, tabletop) {
   rawData = data;
+
+  for (i = 0; i < rawData.length; i++) {
+    rollCalls.push(rawData[i].roll_call_number)
+  }
 }
 
 // this function performs a lookup of senators based on the state selected 
@@ -197,30 +201,6 @@ function getMsg(name, phone, sentiment, vote, bill) {
 //          });
 // }
 
-// this function uses the propublica api to return how a particular rep voted on a bill
-// https://propublica.github.io/congress-api-docs/#get-a-specific-roll-call-vote
-// takes two arguments: roll call # and rep's 7-character bio id, both as strings
-function getVote(rollCall, repId) {
-  $.ajax({
-           url: "https://api.propublica.org/congress/v1/115/senate/sessions/1/votes/"+rollCall+".json",
-           type: "GET",
-           dataType: 'json',
-           headers: {'X-API-Key': 'AzuJWcFuUg3f0iLuL5zrl5M8RExaka469UWE81df'}
-         }).done(function(data) {
-          var positions = data.results.votes.vote.positions
-          for (var i = 0; i < positions.length; i++) {
-            var repIdToCheck = positions[i].member_id
-            console.log('repId: ', repId)
-            console.log('repIdToCheck: ', repIdToCheck)
-            if (repIdToCheck.indexOf(repId) > -1) {
-              var position = positions[i].vote_position
-              console.log(position)
-              break;
-            }
-          }
-        });
-}
-
 // this function uses the propublica api to match a senator's name to his/her bio id: 
 // https://propublica.github.io/congress-api-docs/#lists-of-members
 // takes two arguments: chamber can either be 'senate' or 'house'; 'senator' is first name + last name
@@ -236,12 +216,47 @@ function matchSenatorName(chamber, senator){
             var name = memberList[i].first_name + ' ' + memberList[i].last_name;
             if (name.indexOf(senator) > -1 ) {
               repId = (memberList[i].id).toString()
-              // getBill(repId)
-              getVote("17", repId)
-              break;
+              // pick a random roll call vote
+              var picker = Math.floor(Math.random() * rollCalls.length)
+              getVote(rollCalls[picker], repId)
             }
           }
         })
 }
 
+// this function uses the propublica api to return how a particular rep voted on a bill
+// https://propublica.github.io/congress-api-docs/#get-a-specific-roll-call-vote
+// takes two arguments: roll call # and rep's 7-character bio id, both as strings
+function getVote(rollCall, repId) {
+  $.ajax({
+           url: "https://api.propublica.org/congress/v1/115/senate/sessions/1/votes/"+rollCall+".json",
+           type: "GET",
+           dataType: 'json',
+           headers: {'X-API-Key': 'AzuJWcFuUg3f0iLuL5zrl5M8RExaka469UWE81df'}
+         }).done(function(data) {
+          var positions = data.results.votes.vote.positions
+          // not sure why this loop happens twice?
+          for (var i = 0; i < positions.length; i++) {
+            var repIdToCheck = positions[i].member_id
+            console.log('repId: ', repId)
+            console.log('repIdToCheck: ', repIdToCheck)
+            if (repIdToCheck.indexOf(repId) > -1) {
+              var position = positions[i].vote_position.toLowerCase()
+              getSentiment(position)
+            }
+          }
+        });
+}
+
+function getSentiment(position) {
+  // TODO: figure out how to index by the roll call number in the spreadsheet, make '0' a var not hard-coded
+  var desiredVote = rawData[0].desired_vote
+  if (position.indexOf(desiredVote) > -1) {
+    sentiment = rawData[0].pro_text
+    console.log(sentiment)
+  } else {
+    sentiment = rawData[0].anti_text
+    console.log(sentiment)
+  }
+}
 
