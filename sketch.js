@@ -14,7 +14,7 @@ var w = 500;
 // meme text positioning and size
 var x = 10;
 var ts = 40;
-var rightTextMargin = w - x;
+var rightTextBound = w - x;
 
 function preload() {
   senators = loadJSON('senators.json');
@@ -96,7 +96,7 @@ function findReps() {
     }
     button.mousePressed(assignSenator);
   }
-} //draw rep ends
+}
 
 function getImage(imgUrl) {
   var img = createImg(imgUrl);
@@ -112,10 +112,30 @@ function getMsg(name, phone, sentiment, vote, bill) {
   textSize(ts);
   // Call 208-980-2091 to say "I oppose!"
   // Rep. Murray just voted "No" on RB. 157
-  var top = "Call " + phone + " to say " + sentiment;
-  var bottom = name + " just voted " + vote + " on " + bill;
-  text(top, x, w - 450, rightTextMargin, w);
-  text(bottom, x, w - 150, rightTextMargin, w);
+  
+  // construct the text strings and measure their widths
+  var callText = "Call " + phone + " to say " + sentiment;
+  var repVoteText = name + " just voted " + vote + " on " + bill;
+  var topWidth = textWidth(callText);
+  var bottomWidth = textWidth(repVoteText);
+  var lineHeight = ts*1.2
+
+  // draw background boxes for text based on text string widths
+  var bgColor = color('rgba(255, 0, 255, .5)');
+  fill(bgColor);
+  noStroke();
+  var topRect = rect(x, w-450, w - 2 * x, lineHeight);
+  var bottomRect = rect(x, w-150, w - 2 * x, lineHeight);
+  // if text goes past the rightTextBound, 
+  // draw background boxes on the next line
+  if (topWidth > w - rightTextBound || bottomWidth > w - rightTextBound) {
+    var topRect2 = rect(x, w-400, topWidth - w + x, lineHeight);
+    var bottomRect2 = rect(x, w-100, bottomWidth - w + x, lineHeight);
+  }
+  // create bounding boxes for text
+  fill(255);
+  var topLine = text(callText, x, w - 450, rightTextBound, w);
+  var bottomLine = text(repVoteText, x, w - 150, rightTextBound, w);
 }
 
 // function fillImage(image, number, name, fontsize, refreshing){
@@ -147,17 +167,17 @@ function getMsg(name, phone, sentiment, vote, bill) {
 //   };
 // } //fill image ends
 
-function drawTextBG(ctx, txt, font, x, y) {
-  ctx.save();
-  ctx.font = font;
-  ctx.textBaseline = 'top';
-  ctx.fillStyle = 'rgba(40,40,40,.5)';
-  var width = ctx.measureText(txt).width;
-  ctx.fillRect(x, y, width, parseInt(font, 10));
-  ctx.fillStyle = '#fff';
-  ctx.fillText(txt, x, y);
-  ctx.restore();
-}
+// function drawTextBG(ctx, txt, font, x, y) {
+//   ctx.save();
+//   ctx.font = font;
+//   ctx.textBaseline = 'top';
+//   ctx.fillStyle = 'rgba(40,40,40,.5)';
+//   var width = ctx.measureText(txt).width;
+//   ctx.fillRect(x, y, width, parseInt(font, 10));
+//   ctx.fillStyle = '#fff';
+//   ctx.fillText(txt, x, y);
+//   ctx.restore();
+// }
 
 // this function uses the propublica api to get recent bills by a specific member: 
 // https://propublica.github.io/congress-api-docs/#get-recent-bills-by-a-specific-member
