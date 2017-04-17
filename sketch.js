@@ -1,15 +1,14 @@
+var PPKEY = 'AzuJWcFuUg3f0iLuL5zrl5M8RExaka469UWE81df'
 // variables for tabletop.js values
-var rawData, 
+var rawData;
+// interface variables
+var canvas,
+  findButton,
+  clearButton,
+  saveButton,
+  textSizeSlider,
   selector, 
-  selectedState, 
-  fontsize, 
-  tempCanvas, 
-  context, 
-  issue;
-
-var repId;
-var rollCalls = []
-
+  selectedState;
 // square canvas dimensions
 var w = 500;
 // meme text positioning and size
@@ -17,15 +16,11 @@ var x = 10;
 var ts = 40;
 var rightTextBound = w - x;
 
+var rollCalls = []
+
 function preload() {
   senators = loadJSON('senators.json');
 }
-
-var canvas,
-  findButton,
-  clearButton,
-  saveButton,
-  textSizeSlider;
 
 function setup() {
   Tabletop.init( { key: 'https://docs.google.com/spreadsheets/d/1oWAFQIIRZneiAQAXRvJ1S4K_Lall0DY_A8WGIVawXpc/pubhtml',
@@ -142,47 +137,6 @@ function getMsg(name, phone, sentiment, vote, bill) {
   var bottomLine = text(repVoteText, x, w - 150, rightTextBound, w);
 }
 
-// function fillImage(image, number, name, fontsize, refreshing){
-//   if (!fontsize) {
-//     fontsize = 32
-//   }
-//   // using vanilla JS instead of p5 here to draw image to canvas from URL
-//   // see https://github.com/processing/p5.js/issues/561
-//   var img = new Image;
-//   img.src = image;
-//   img.crossOrigin = 'Anonymous'
-//   var tempDiv = document.getElementById('canvas')
-//   tempCanvas = document.getElementById('defaultCanvas0'),
-//   context = tempCanvas.getContext('2d');
-//   if (!refreshing){
-//     drawTextBG(context, "PLEASE WAIT, LOADING IMAGE OF", fontsize + 'px arial', 0, 100);
-//     drawTextBG(context, name, fontsize + 'px arial', 0, 130);
-//   }
-
-//   img.onload = function(){
-//     var ratio = img.width/img.height
-//     var divide = img.width / 500
-//     var height = img.height / divide
-//     context.drawImage(img,0,0,500,height);
-//     drawTextBG(context, "CALL: " + number + ' To Say', fontsize + 'px arial', 0, 400);
-//     // drawTextBG(context, sentiment, fontsize  + 'px arial', 0, 450)
-//     drawTextBG(context, name + ' just voted on', fontsize + 'px arial', 0, 40);
-//     drawTextBG(context, issue, fontsize + 'px arial', 0, 80);
-//   };
-// } //fill image ends
-
-// function drawTextBG(ctx, txt, font, x, y) {
-//   ctx.save();
-//   ctx.font = font;
-//   ctx.textBaseline = 'top';
-//   ctx.fillStyle = 'rgba(40,40,40,.5)';
-//   var width = ctx.measureText(txt).width;
-//   ctx.fillRect(x, y, width, parseInt(font, 10));
-//   ctx.fillStyle = '#fff';
-//   ctx.fillText(txt, x, y);
-//   ctx.restore();
-// }
-
 // this function uses the propublica api to get recent bills by a specific member: 
 // https://propublica.github.io/congress-api-docs/#get-recent-bills-by-a-specific-member
 // TODO: figure out 'introduced' vs. 'updated' args
@@ -204,12 +158,12 @@ function getMsg(name, phone, sentiment, vote, bill) {
 // this function uses the propublica api to match a senator's name to his/her bio id: 
 // https://propublica.github.io/congress-api-docs/#lists-of-members
 // takes two arguments: chamber can either be 'senate' or 'house'; 'senator' is first name + last name
-function matchSenatorName(chamber, senator){
+function matchSenatorName(chamber, senator, picker) {
   $.ajax({
            url: "https://api.propublica.org/congress/v1/115/"+chamber+"/members.json",
            type: "GET",
            dataType: 'json',
-           headers: {'X-API-Key': 'AzuJWcFuUg3f0iLuL5zrl5M8RExaka469UWE81df'}
+           headers: {'X-API-Key': PPKEY }
          }).done(function(data) {
           var memberList = data.results[0].members;
           for (var i = 0; i < memberList.length; i++) {
@@ -217,8 +171,8 @@ function matchSenatorName(chamber, senator){
             if (name.indexOf(senator) > -1 ) {
               repId = (memberList[i].id).toString()
               // pick a random roll call vote
-              var picker = Math.floor(Math.random() * rollCalls.length)
-              getVote(rollCalls[picker], repId)
+              picker = Math.floor(Math.random() * rollCalls.length)
+              getVote(rollCalls[picker], repId, picker)
             }
           }
         })
@@ -227,35 +181,32 @@ function matchSenatorName(chamber, senator){
 // this function uses the propublica api to return how a particular rep voted on a bill
 // https://propublica.github.io/congress-api-docs/#get-a-specific-roll-call-vote
 // takes two arguments: roll call # and rep's 7-character bio id, both as strings
-function getVote(rollCall, repId) {
+function getVote(rollCall, repId, picker) {
   $.ajax({
            url: "https://api.propublica.org/congress/v1/115/senate/sessions/1/votes/"+rollCall+".json",
            type: "GET",
            dataType: 'json',
-           headers: {'X-API-Key': 'AzuJWcFuUg3f0iLuL5zrl5M8RExaka469UWE81df'}
+           headers: {'X-API-Key': PPKEY}
          }).done(function(data) {
           var positions = data.results.votes.vote.positions
-          // not sure why this loop happens twice?
           for (var i = 0; i < positions.length; i++) {
             var repIdToCheck = positions[i].member_id
-            console.log('repId: ', repId)
-            console.log('repIdToCheck: ', repIdToCheck)
             if (repIdToCheck.indexOf(repId) > -1) {
               var position = positions[i].vote_position.toLowerCase()
-              getSentiment(position)
+              break;
             }
           }
+          getSentiment(position, picker)
         });
 }
 
-function getSentiment(position) {
-  // TODO: figure out how to index by the roll call number in the spreadsheet, make '0' a var not hard-coded
-  var desiredVote = rawData[0].desired_vote
+function getSentiment(position, picker) {
+  var desiredVote = rawData[picker].desired_vote
   if (position.indexOf(desiredVote) > -1) {
-    sentiment = rawData[0].pro_text
+    sentiment = rawData[picker].pro_text
     console.log(sentiment)
   } else {
-    sentiment = rawData[0].anti_text
+    sentiment = rawData[picker].anti_text
     console.log(sentiment)
   }
 }
