@@ -120,7 +120,7 @@ function getMsg(name, phone, sentiment, vote, bill) {
   var lineHeight = ts*1.2
 
   // draw background boxes for text based on text string widths
-  var bgColor = color('rgba(255, 0, 255, .5)');
+  var bgColor = color('rgba(25, 38, 82, .5)');
   fill(bgColor);
   noStroke();
   var topRect = rect(x, w-450, w - 2 * x, lineHeight);
@@ -172,6 +172,7 @@ function matchSenatorName(chamber, senator, picker) {
               repId = (memberList[i].id).toString()
               // pick a random roll call vote
               picker = Math.floor(Math.random() * rollCalls.length)
+              console.log('bill: ', rollCalls[picker])
               getVote(rollCalls[picker], repId, picker)
             }
           }
@@ -193,6 +194,7 @@ function getVote(rollCall, repId, picker) {
             var repIdToCheck = positions[i].member_id
             if (repIdToCheck.indexOf(repId) > -1) {
               var position = positions[i].vote_position.toLowerCase()
+              console.log('vote: ', position)
               break;
             }
           }
@@ -204,10 +206,10 @@ function getSentiment(position, picker) {
   var desiredVote = rawData[picker].desired_vote
   if (position.indexOf(desiredVote) > -1) {
     sentiment = rawData[picker].pro_text
-    console.log(sentiment)
+    console.log('sentiment: ', sentiment)
   } else {
     sentiment = rawData[picker].anti_text
-    console.log(sentiment)
+    console.log('sentiment: ', sentiment)
   }
 }
 

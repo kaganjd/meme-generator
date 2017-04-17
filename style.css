@@ -1,5 +1,24 @@
-body, h1 {
-  font-family: Helvetica;
+body {
+  font-family: 'Montserrat', sans-serif;
+  color: #192652;
+  margin-left: 20px;
+}
+
+h1 {
+  font-weight: 600;
+}
+
+button {
+  font-family: 'Montserrat', sans-serif;
+}
+
+select {
+  font-family: 'Montserrat', sans-serif;
+}
+
+li {
+  padding-top: 10px;
+  padding-bottom: 10px;
 }
 
 #canvas {
@@ -14,31 +33,4 @@ body, h1 {
 
 #dashboard {
   display: inline;
-}
-
-#slider-area {
-  position: relative;
-  left: 510px;
-  border: 1px solid;
-  padding: 5px;
-  text-align: center;
-  width: 220px;
-}
-
-#slider-area > div {
-  display: inline;
-}
-
-#smaller {
-  font-size: 12px;
-}
-
-#bigger {
-  font-size: 30px;
-}
-
-#defaultCanvas0 {
-  object-fit: cover;
-  width: 50px;
-  height: 100px;
 }
