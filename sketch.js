@@ -48,11 +48,11 @@ function setup() {
   findButton.mousePressed(findReps);
 
   clearButton = createButton('Clear Canvas');
-  clearButton.parent('actions');
+  clearButton.parent('clear-canvas');
   clearButton.mousePressed(clearCanvas);
 
   saveButton = createButton('Save');
-  saveButton.parent('actions');
+  saveButton.parent('save-canvas');
   saveButton.mousePressed(saveIt);
 }
 
@@ -111,7 +111,8 @@ function getMsg(name, phone, sentiment, vote, bill) {
   textSize(ts);
   // Call 208-980-2091 to say "I oppose!"
   // Rep. Murray just voted "No" on RB. 157
-  
+  textFont("Montserrat");
+
   // construct the text strings and measure their widths
   var callText = "Call " + phone + " to say " + sentiment;
   var repVoteText = name + " just voted " + vote + " on " + bill;

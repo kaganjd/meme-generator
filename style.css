@@ -6,10 +6,28 @@ body {
 
 h1 {
   font-weight: 600;
+  color: #192652;
 }
 
 button {
   font-family: 'Montserrat', sans-serif;
+  background-color: #ff3838;
+  color: white;
+  border-style: none;
+  border-radius: 2px;
+  box-shadow: 0 1px 1px rgba(200, 200, 200, .4);
+  font-weight: 200;
+  text-transform: uppercase;
+  padding: 5px 10px 5px 10px;
+  margin-right: 10px;
+}
+
+button:focus {
+  outline:0;
+}
+
+button:hover {
+  background-color: #a00003;
 }
 
 select {
@@ -21,16 +39,16 @@ li {
   padding-bottom: 10px;
 }
 
-#canvas {
-  position: absolute;
+.container {
+  display: flex;
+  height: 500px;
 }
 
-#actions {
-  position: relative;
-  left: 510px;
-  top: 50px;
-}
-
-#dashboard {
-  display: inline;
+#instructions {
+  min-width: 340px;
+  background-color: whitesmoke;
+  height: auto;
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
+/*  box-shadow: 0 1px 1px rgba(200, 200, 200, .4);*/
 }
