@@ -9,6 +9,9 @@ var canvas,
   textSizeSlider,
   selector, 
   selectedState;
+
+var position, sentiment, billnum, this_sen_phone, this_sen_name;
+
 // square canvas dimensions
 var w = 500;
 // meme text positioning and size
@@ -81,33 +84,52 @@ function findReps() {
   clearCanvas();
   selectedState = selector.options[selector.selectedIndex].value;
   var selectedSenators = senators[selectedState];
+  $('#list-reps').html('');
   for (var i = 0; i < selectedSenators.length; i++) {
+    //create two buttons
     var button = createButton(selectedSenators[i].name)
+
     button.parent('list-reps');
     setSenator(button, selectedSenators[i]);
   }
+
   function setSenator(button, senator) {
+
+    //this gets called on click of specific Senator name
     function assignSenator() {
-      getImage(senator.image)
-      getMsg(senator.name, senator.phone)
+      getImage(senator.image, senator.name, senator.phone)
+      this_sen_phone = senator.phone;
+      this_sen_name = senator.name;
+      // getMsg(senator.name, senator.phone)
       // fillImage(senator.image, senator.phone, senator.name)
       matchSenatorName("senate", senator.name)
     }
+
+    //give it onclick functionality
     button.mousePressed(assignSenator);
   }
 }
 
-function getImage(imgUrl) {
-  var img = createImg(imgUrl);
-  img.hide()
-  console.log
-  var ratio = img.width / img.height
-  var divide = img.width / w
-  var height = img.height / divide
-  image(img, 0, 0, w, height)
+//happens on click of senator name
+function getImage(imgUrl, name, phone) {
+  clearCanvas();
+  $('#canvas').append('<p id="tempLoading">LOADING NEW <br> IMAGE</p>');
+  loadImage(imgUrl, function(loadedImg, name, phone) {
+    var ratio = loadedImg.width / loadedImg.height
+    var divide = loadedImg.width / w
+    var height = loadedImg.height / divide
+    $('#tempLoading').remove();
+      image(loadedImg, 0, 0, w, height);
+      // console.dir(loadedImg)
+      // this_sen_phone = phone;
+      // this_sen_name = name;
+       // getMsg(name, phone)
+    });
 }
 
+// this what we passed in: name, phone, sentiment, position, billnum
 function getMsg(name, phone, sentiment, vote, bill) {
+  console.log('the get mssfunction recieved: '+ name + phone + sentiment + vote + bill)
   textSize(ts);
   // Call 208-980-2091 to say "I oppose!"
   // Rep. Murray just voted "No" on RB. 157
@@ -174,6 +196,7 @@ function matchSenatorName(chamber, senator, picker) {
               // pick a random roll call vote
               picker = Math.floor(Math.random() * rollCalls.length)
               console.log('bill: ', rollCalls[picker])
+              billnum = rollCalls[picker]
               getVote(rollCalls[picker], repId, picker)
             }
           }
@@ -194,7 +217,7 @@ function getVote(rollCall, repId, picker) {
           for (var i = 0; i < positions.length; i++) {
             var repIdToCheck = positions[i].member_id
             if (repIdToCheck.indexOf(repId) > -1) {
-              var position = positions[i].vote_position.toLowerCase()
+              position = positions[i].vote_position.toLowerCase()
               console.log('vote: ', position)
               break;
             }
@@ -212,5 +235,8 @@ function getSentiment(position, picker) {
     sentiment = rawData[picker].anti_text
     console.log('sentiment: ', sentiment)
   }
+
+  getMsg(this_sen_name, this_sen_phone, sentiment, position, billnum)
+
 }
 
