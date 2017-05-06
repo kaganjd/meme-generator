@@ -1,44 +1,65 @@
-body, h1 {
-  font-family: Helvetica;
+body {
+  font-family: 'Montserrat', sans-serif;
+  color: #192652;
+  margin-left: 20px;
 }
 
-#canvas {
+h1 {
+  font-weight: 600;
+  color: #192652;
+}
+
+button {
+  font-family: 'Montserrat', sans-serif;
+  background-color: #ff3838;
+  color: white;
+  border-style: none;
+  border-radius: 2px;
+  box-shadow: 0 1px 1px rgba(200, 200, 200, .4);
+  font-weight: 200;
+  text-transform: uppercase;
+  padding: 5px 10px 5px 10px;
+  margin-right: 10px;
+}
+
+button:focus {
+  outline:0;
+}
+
+button:hover {
+  background-color: #a00003;
+}
+
+select {
+  font-family: 'Montserrat', sans-serif;
+}
+
+li {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.container {
+  display: flex;
+  flex-direction: row;
+  height: 500px;
   position: absolute;
 }
 
-#actions {
+#tempLoading {
   position: relative;
-  left: 510px;
-  top: 50px;
+  top: -10em;
+  left: 1em;
+  font-size: 2em;
+  color: white;
 }
 
-#dashboard {
-  display: inline;
-}
+#instructions {
 
-#slider-area {
-  position: relative;
-  left: 510px;
-  border: 1px solid;
-  padding: 5px;
-  text-align: center;
-  width: 220px;
-}
-
-#slider-area > div {
-  display: inline;
-}
-
-#smaller {
-  font-size: 12px;
-}
-
-#bigger {
-  font-size: 30px;
-}
-
-#defaultCanvas0 {
-  object-fit: cover;
-  width: 50px;
-  height: 100px;
+  min-width: 340px;
+  background-color: whitesmoke;
+  height: auto;
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
+/*  box-shadow: 0 1px 1px rgba(200, 200, 200, .4);*/
 }

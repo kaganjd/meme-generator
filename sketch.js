@@ -1,220 +1,232 @@
-// variables for tabletop.js values
-var rawData, selector, selectedState, fontsize, tempCanvas, context, issue;
-var currentSenator = {
-  'name': '',
-  'image': '',
-  'phone': '',
-  'vote': '',
-  'happy':''
-}
-
-// canvas dimensions
-var w = 500;
-var h = w;
-
-function preload() {
-  senators = loadJSON('senators.json');
-}
-
+var PPKEY = ''
+// variables for pulling data from spreadsheet
+var rawData;
+var rollCalls = []
+// variables for application interface
 var canvas,
   findButton,
-  clearButton,
   saveButton,
-  textSizeSlider,
-  img;
+  selector;
+// square canvas dimensions
+var w = 500;
+// meme text positioning and size
+var x = 10;
+var ts = 40;
+var rightTextBound = w - x;
+// vars for populating the canvas with data
+var mocPosition,
+  sentiment,
+  mocRollCall,
+  mocPhone,
+  mocName,
+  mocImage;
 
 function setup() {
-  // to re-org databaseA.js by state:
-  // for (var i = 0; i < senators.length; i++) {
-  //   var state = senators[i].state;
-  //   if (senatorsByState[state] == undefined) {
-  //     senatorsByState[state] = [];
-  //     senatorsByState[state].push(senators[i]);
-  //   } else {
-  //     senatorsByState[state].push(senators[i]);      
-  //   }
-  // }
-  // console.log(senatorsByState);
-  // saveJSON(senatorsByState,'senators2.json');
-
-  Tabletop.init( { key: 'https://docs.google.com/spreadsheets/d/1Yj83AF5q6sv2XTQ8ZGCX1ZrwDCFbtc_O7CidSPSEI0o/pubhtml',
+  Tabletop.init( { key: 'https://docs.google.com/spreadsheets/d/1oWAFQIIRZneiAQAXRvJ1S4K_Lall0DY_A8WGIVawXpc/pubhtml',
                    callback: gotData,
                    simpleSheet: true } )
-
-  canvas = createCanvas(w, h);
+  // create canvas
+  canvas = createCanvas(w, w);
   canvas.parent('canvas');
   background(200);
-
+  // create dropdown list of states
   selector = document.getElementById("state-dropdown");
-
-  var states = Object.keys(senators);
-
-  // create state dropdown list from 'senators' array in databaseA.js
-  for (var i = 0; i < states.length; i++) {
-      var opt = states[i];
-      var el = document.createElement("option");
-      el.textContent = opt;
-      el.value = opt;
-      selector.appendChild(el);
+  for (var i = 0; i < states_titlecase.length; i++) {
+      var element = document.createElement("option");
+      element.textContent = states_titlecase[i].name;
+      element.value = states_titlecase[i].abbreviation;
+      selector.appendChild(element);
     }
-
+  // create find button
   findButton = createButton('Find')
   findButton.parent('check-zip')
   findButton.mousePressed(findReps);
-
-  clearButton = createButton('Clear Canvas');
-  clearButton.parent('actions');
-  clearButton.mousePressed(clearCanvas);
-
+  // create save button
   saveButton = createButton('Save');
-  saveButton.parent('actions');
+  saveButton.parent('save-canvas');
   saveButton.mousePressed(saveIt);
+}
 
-  textSizeSlider = createSlider(5, 100, 32);
-  textSizeSlider.parent('size-slider');
-  textSizeSlider.input(updateTextSize);
-}
-// 'save' button
 function saveIt() {
-  saveCanvas(canvas, 'Share_'+ currentSenator.name, 'jpg');
+  saveCanvas(canvas, 'Share_'+ mocName, 'jpg');
 }
-// 'clear canvas' button
+
 function clearCanvas() {
   clear();
   background(200);
 }
-// store spreadsheet data in rawData variable
+
+// store daily spreadsheet data in rawData variable
 function gotData(data, tabletop) {
   rawData = data;
+  // get roll call numbers from daily spreadsheet
+  for (i = 0; i < rawData.length; i++) {
+    rollCalls.push(rawData[i].roll_call_number)
+  }
 }
 
+// this function performs a lookup of senators based on the state selected 
+// from the dropdown
 function findReps() {
   selectedState = selector.options[selector.selectedIndex].value;
-  var selectedSenators = senators[selectedState];
-  console.log(selectedSenators);
+  getSenatorsByState(selectedState)
+}
 
-  function setSenator(button, senator) {
-    function assignSenator() {
-      currentSenator = senator;
-      getSenatorVote(senator.name)
-      matchSenatorName(senator.name)
-      console.log(currentSenator);
-    }
-    button.mousePressed(assignSenator);
-  }
+// this makes an API call to: https://propublica.github.io/congress-api-docs/#get-current-members-by-state-district
+function getSenatorsByState(state, senatorList) {
+  $.ajax({
+           url: "https://api.propublica.org/congress/v1/members/senate/" + state +  "/current.json",
+           type: "GET",
+           dataType: 'json',
+           headers: {'X-API-Key': PPKEY }
+         }).done(function(data) {
+          senatorList = [];
+          for (var i = 0; i < data.results.length; i++) {
+            senatorList.push(data.results[i].name);
+          }
+          createButtons(senatorList)
+        })    
+}
 
-  for (var i = 0; i < selectedSenators.length; i++) {
-    var button = createButton(selectedSenators[i].name)
+// this function creates a button for each MOC returned by findReps()
+// then, it puts the button in the 'list-reps' div
+function createButtons(senatorList) {
+  // clear existing stuff on the canvas
+  clearCanvas();
+  // clear existing button cache
+  $('#list-reps').html('');
+  // for each MOC, create a button with MOC's name
+  for (var i = 0; i < senatorList.length; i++) {
+    var button = createButton(senatorList[i])
     button.parent('list-reps');
-    setSenator(button, selectedSenators[i]);
+    setMoc(button, senatorList[i]);
   }
-} //draw rep ends
-
-function fillImage(image, number, name, fontsize, refreshing){
-  if (!fontsize) {
-    fontsize = 32
-  }
-
-  if (currentSenator.happy == "Y") {
-    var sentiment = 'THANK YOU'
-  } else {
-    var sentiment = 'I OPPOSE'
-  }
-
-  var img = new Image;
-  img.src = image;
-  img.crossOrigin = 'Anonymous'
-  var tempDiv = document.getElementById('image-here');
-  tempCanvas = document.getElementById('defaultCanvas0'),
-  context = tempCanvas.getContext('2d');
-  if (!refreshing){
-    drawTextBG(context, "PLEASE WAIT, LOADING IMAGE OF", fontsize + 'px arial', 0, 100);
-    drawTextBG(context, name, fontsize + 'px arial', 0, 130);
-  }
-
-  img.onload = function(){
-    var ratio = img.width/img.height
-    var divide = img.width / 500
-    var height = img.height / divide
-    context.drawImage(img,0,0,500,height);
-    drawTextBG(context, "CALL: " + number + ' To Say', fontsize + 'px arial', 0, 400);
-    drawTextBG(context, sentiment, fontsize  + 'px arial', 0, 450)
-    drawTextBG(context, name + ' just voted on', fontsize + 'px arial', 0, 40);
-    drawTextBG(context, issue, fontsize + 'px arial', 0, 80);
-  };
-} //fill image ends
-
-function updateTextSize(event){
-  fillImage(currentSenator.image,
-    currentSenator.phone,
-    currentSenator.name,
-    textSizeSlider.value(),
-    true)
-}
-
-function drawTextBG(ctx, txt, font, x, y) {
-  ctx.save();
-  ctx.font = font;
-  ctx.textBaseline = 'top';
-  ctx.fillStyle = 'rgba(40,40,40,.5)';
-  var width = ctx.measureText(txt).width;
-  ctx.fillRect(x, y, width, parseInt(font, 10));
-  ctx.fillStyle = '#fff';
-  ctx.fillText(txt, x, y);
-  ctx.restore();
-}
-
-function getSenatorVote(name){
-  rawData[0].issue = issue
-  //look through all of rawData, find senator name
-  rawData.forEach(function(senator){
-    if (name == senator.name){
-      //update local json of currentSenator
-      currentSenator.vote = senator.their_vote
-      currentSenator.happy = senator.happy
-      //why didn't return work?
-      // return senator.happy;
+  function setMoc(button, moc) {
+    function assignMoc() {
+      $('#tempLoading').remove();
+      $('#canvas').append('<p id="tempLoading">Finding latest votes...</p>');
+      // set MOC's name to be used on meme 
+      mocName = moc
+      // get MOC's image
+      getImage(mocName)
+      // start collecting vote information
+      matchSenatorName("senate", mocName)
     }
-  })
-  // now that we have all the data, draw it
-  // TODO: get fillImage out of this function
-  fillImage(currentSenator.image, currentSenator.phone, currentSenator.name)
-}
-
-function hitPropublica(stateAbbrev){
-  $.ajax({
-           url: "https://api.propublica.org/congress/v1/members/senate/"+stateAbbrev+"/current.json",
-           type: "GET",
-           dataType: 'json',
-           headers: {'X-API-Key': 'AzuJWcFuUg3f0iLuL5zrl5M8RExaka469UWE81df'}
-         }).done(function(data) {
-          logSenatorDetails(data.results)
-         }); // ajax done
-}
-
-function matchSenatorName(targetMember){
-  var targetMemberArray = targetMember.split(' ')
-  console.log('Target is: ', targetMemberArray)
-  $.ajax({
-           url: "https://api.propublica.org/congress/v1/115/senate/members.json",
-           type: "GET",
-           dataType: 'json',
-           headers: {'X-API-Key': 'AzuJWcFuUg3f0iLuL5zrl5M8RExaka469UWE81df'}
-         }).done(function(data) {
-           logMemberName(data.results[0].members)
-         }); // ajax done
-  
-  function logMemberName(dataArray) {
-    dataArray.forEach(function(names) {
-      if (names.first_name == targetMemberArray[0] && names.last_name == targetMemberArray[1]) {
-        console.log('This is the selected person: ', names)
-      }
-    });
+    // on button click, call assignSenator(), which calls matchSenatorName()
+    button.mousePressed(assignMoc);
   }
 }
 
-function logSenatorDetails(dataArray){
-  dataArray.forEach(function(data) {
-    console.log(data)
-  })
+function getImage(moc) {
+  // clear existing image
+  clearCanvas();
+  // get imgUrl from moc name that was passed into the function
+  var imgUrl;
+  for (i = 0; i < senators.length; i++) {
+    if (moc.indexOf(senators[i]["last_name"]) > -1) {
+      imgUrl = senators[i]["image"];
+    }
+  }
+  // load MOC's image from the imgUrl passed in
+  loadImage(imgUrl, function(loadedImg) {
+    var ratio = loadedImg.width / loadedImg.height
+    var divide = loadedImg.width / w
+    var height = loadedImg.height / divide
+    image(loadedImg, 0, 0, w, height);
+  });
+}
+
+// this function makes a call to the propublica API to get recent votes and contact info:
+// https://propublica.github.io/congress-api-docs/#lists-of-members
+// 'chamber' can either be 'senate' or 'house'
+function matchSenatorName(chamber, moc, picker) {
+  $.ajax({
+           url: "https://api.propublica.org/congress/v1/115/"+chamber+"/members.json",
+           type: "GET",
+           dataType: 'json',
+           headers: {'X-API-Key': PPKEY }
+         }).done(function(data) {
+          var memberList = data.results[0].members;
+          // for each member returned, check if it matches the MOC passed in
+          for (var i = 0; i < memberList.length; i++) {
+            var name = memberList[i].first_name + ' ' + memberList[i].last_name;
+            // if there's a match, get voting and contact info
+            if (moc.indexOf(memberList[i].last_name) > -1 ) {
+              repId = (memberList[i].id).toString()
+              // pick a random roll call vote from the spreadsheet
+              picker = Math.floor(Math.random() * rollCalls.length)
+              console.log('bill: ', rollCalls[picker])
+              mocRollCall = rollCalls[picker]
+              mocPhone = memberList[i].phone
+              getVote(rollCalls[picker], repId, picker)
+            } else {
+            }
+          }
+        })    
+}
+
+// this function uses the propublica API to return how a particular rep voted on a bill:
+// https://propublica.github.io/congress-api-docs/#get-a-specific-roll-call-vote
+function getVote(rollCall, repId, picker) {
+  $.ajax({
+           url: "https://api.propublica.org/congress/v1/115/senate/sessions/1/votes/"+rollCall+".json",
+           type: "GET",
+           dataType: 'json',
+           headers: {'X-API-Key': PPKEY}
+         }).done(function(data) {
+          var positions = data.results.votes.vote.positions
+          for (var i = 0; i < positions.length; i++) {
+            var repIdToCheck = positions[i].member_id
+            if (repIdToCheck.indexOf(repId) > -1) {
+              mocPosition = positions[i].vote_position.toLowerCase()
+              console.log('vote: ', mocPosition)
+              break;
+            }
+          }
+          getSentiment(mocPosition, picker)
+        });
+}
+
+function getSentiment(mocPosition, picker) {
+  var desiredVote = rawData[picker].desired_vote
+  if (mocPosition.indexOf(desiredVote) > -1) {
+    sentiment = rawData[picker].pro_text
+    console.log('sentiment: ', sentiment)
+  } else {
+    sentiment = rawData[picker].anti_text
+    console.log('sentiment: ', sentiment)
+  }
+  getMsg(mocName, mocPhone, sentiment, mocPosition, mocRollCall)
+}
+
+function getMsg(name, phone, sentiment, vote, bill) {
+  textSize(ts);
+  // Call 208-980-2091 to say "I oppose!"
+  // Rep. Murray just voted "No" on RB. 157
+  textFont("Montserrat");
+  // construct the text strings and measure their widths
+  var callText = 'Call ' + phone + ' to say ' + '\"' + sentiment + '\"';
+  var repVoteText = name + " just voted " + vote + " on " + bill;
+  var topWidth = textWidth(callText);
+  var bottomWidth = textWidth(repVoteText);
+  var lineHeight = ts*1.2
+
+  // draw background boxes for text based on text string widths
+  var bgColor = color('rgba(25, 38, 82, .5)');
+  fill(bgColor);
+  noStroke();
+  var topRect = rect(x, w-450, w - 2 * x, lineHeight);
+  var bottomRect = rect(x, w-150, w - 2 * x, lineHeight);
+  // if text goes past the rightTextBound, 
+  // draw background boxes on the next line
+  if (topWidth > w - rightTextBound || bottomWidth > w - rightTextBound) {
+    var topRect2 = rect(x, w-400, topWidth - w + x, lineHeight);
+    var bottomRect2 = rect(x, w-100, bottomWidth - w + x, lineHeight);
+  }
+  // remove 'loading' text
+  $('#tempLoading').remove();
+  // create bounding boxes for text
+  fill(255);
+  var topLine = text(callText, x, w - 450, rightTextBound, w);
+  var bottomLine = text(repVoteText, x, w - 150, rightTextBound, w)
 }
