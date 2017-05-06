@@ -1,3 +1,5 @@
+PPKEY = ''
+
 // startDate and endDate must be in the form "YYYY-MM-DD"
 // chamber can either be "senate" or "house"
 function getBills(chamber, startDate, endDate) {
@@ -5,7 +7,7 @@ function getBills(chamber, startDate, endDate) {
     url: "https://api.propublica.org/congress/v1/"+chamber+"/votes/"+startDate+"/"+endDate+".json",
     type: "GET",
     dataType: 'json',
-    headers: {'X-API-Key': 'AzuJWcFuUg3f0iLuL5zrl5M8RExaka469UWE81df'}
+    headers: {'X-API-Key': PPKEY }
   }).done(function(data) {
     var dateObj = {}
     dateObj.rollCalls = []
