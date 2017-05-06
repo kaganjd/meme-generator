@@ -1,4 +1,4 @@
-var PPKEY = 'AzuJWcFuUg3f0iLuL5zrl5M8RExaka469UWE81df'
+var PPKEY = ''
 // variables for pulling data from spreadsheet
 var rawData;
 var rollCalls = []
