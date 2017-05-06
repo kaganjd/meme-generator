@@ -25,39 +25,41 @@ function setup() {
   Tabletop.init( { key: 'https://docs.google.com/spreadsheets/d/1oWAFQIIRZneiAQAXRvJ1S4K_Lall0DY_A8WGIVawXpc/pubhtml',
                    callback: gotData,
                    simpleSheet: true } )
-
+  // create canvas
   canvas = createCanvas(w, w);
   canvas.parent('canvas');
   background(200);
   // create dropdown list of states
   selector = document.getElementById("state-dropdown");
-  for (var i = 0; i < senators.length; i++) {
-      var choice = senators[i].state;
+  for (var i = 0; i < states_titlecase.length; i++) {
       var element = document.createElement("option");
-      element.textContent = choice;
-      element.value = choice;
+      element.textContent = states_titlecase[i].name;
+      element.value = states_titlecase[i].abbreviation;
       selector.appendChild(element);
     }
-
+  // create find button
   findButton = createButton('Find')
   findButton.parent('check-zip')
   findButton.mousePressed(findReps);
-
+  // create save button
   saveButton = createButton('Save');
   saveButton.parent('save-canvas');
   saveButton.mousePressed(saveIt);
 }
+
 function saveIt() {
-  saveCanvas(canvas, 'Share_'+ senator.name, 'jpg');
+  saveCanvas(canvas, 'Share_'+ mocName, 'jpg');
 }
+
 function clearCanvas() {
   clear();
   background(200);
 }
 
-// store spreadsheet data in rawData variable
+// store daily spreadsheet data in rawData variable
 function gotData(data, tabletop) {
   rawData = data;
+  // get roll call numbers from daily spreadsheet
   for (i = 0; i < rawData.length; i++) {
     rollCalls.push(rawData[i].roll_call_number)
   }
@@ -86,7 +88,7 @@ function getSenatorsByState(state, senatorList) {
         })    
 }
 
-// this function creates a button for each senator returned by findReps()
+// this function creates a button for each MOC returned by findReps()
 // then, it puts the button in the 'list-reps' div
 function createButtons(senatorList) {
   // clear existing stuff on the canvas
@@ -97,28 +99,31 @@ function createButtons(senatorList) {
   for (var i = 0; i < senatorList.length; i++) {
     var button = createButton(senatorList[i])
     button.parent('list-reps');
-    setSenator(button, senatorList[i]);
+    setMoc(button, senatorList[i]);
   }
-  function setSenator(button, senator) {
-    function assignSenator() {
+  function setMoc(button, moc) {
+    function assignMoc() {
       $('#tempLoading').remove();
-      $('#canvas').append('<p id="tempLoading">LOADING...</p>');
-      mocName = senator
-      getImage(senator)
+      $('#canvas').append('<p id="tempLoading">Finding latest votes...</p>');
+      // set MOC's name to be used on meme 
+      mocName = moc
+      // get MOC's image
+      getImage(mocName)
+      // start collecting vote information
       matchSenatorName("senate", mocName)
     }
     // on button click, call assignSenator(), which calls matchSenatorName()
-    button.mousePressed(assignSenator);
+    button.mousePressed(assignMoc);
   }
 }
 
-function getImage(senator) {
+function getImage(moc) {
   // clear existing image
-  var imgUrl;
   clearCanvas();
-  // broken ;(
+  // get imgUrl from moc name that was passed into the function
+  var imgUrl;
   for (i = 0; i < senators.length; i++) {
-    if (senator.indexOf(senators[i]["full_name"]) > -1) {
+    if (moc.indexOf(senators[i]["last_name"]) > -1) {
       imgUrl = senators[i]["image"];
     }
   }
@@ -134,20 +139,19 @@ function getImage(senator) {
 // this function makes a call to the propublica API to get recent votes and contact info:
 // https://propublica.github.io/congress-api-docs/#lists-of-members
 // 'chamber' can either be 'senate' or 'house'
-function matchSenatorName(chamber, senator, picker) {
+function matchSenatorName(chamber, moc, picker) {
   $.ajax({
            url: "https://api.propublica.org/congress/v1/115/"+chamber+"/members.json",
            type: "GET",
            dataType: 'json',
            headers: {'X-API-Key': PPKEY }
          }).done(function(data) {
-          console.log(senator)
           var memberList = data.results[0].members;
-          // for each member returned, check if it matches the senator passed in
+          // for each member returned, check if it matches the MOC passed in
           for (var i = 0; i < memberList.length; i++) {
             var name = memberList[i].first_name + ' ' + memberList[i].last_name;
             // if there's a match, get voting and contact info
-            if (senator.indexOf(memberList[i].last_name) > -1 ) {
+            if (moc.indexOf(memberList[i].last_name) > -1 ) {
               repId = (memberList[i].id).toString()
               // pick a random roll call vote from the spreadsheet
               picker = Math.floor(Math.random() * rollCalls.length)

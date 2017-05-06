@@ -41,18 +41,21 @@ li {
 
 .container {
   display: flex;
+  flex-direction: row;
   height: 500px;
+  position: absolute;
 }
 
 #tempLoading {
-  position: absolute;
-  top: 200px;
-  left: 50px;
+  position: relative;
+  top: -10em;
+  left: 1em;
   font-size: 2em;
   color: white;
 }
 
 #instructions {
+
   min-width: 340px;
   background-color: whitesmoke;
   height: auto;
