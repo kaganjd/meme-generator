@@ -181,10 +181,6 @@ var states_titlecase = [
         "abbreviation": "VT"
     },
     {
-        "name": "Virgin Islands",
-        "abbreviation": "VI"
-    },
-    {
         "name": "Virginia",
         "abbreviation": "VA"
     },
