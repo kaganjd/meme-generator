@@ -46,9 +46,10 @@ li {
 
 #tempLoading {
   position: absolute;
-  top: 50px;
-  font-size: 4em;
-  color: pink;
+  top: 200px;
+  left: 50px;
+  font-size: 2em;
+  color: white;
 }
 
 #instructions {
